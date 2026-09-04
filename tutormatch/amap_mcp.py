@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -37,12 +38,32 @@ async def _get_single_commute(
             logger.warning("高德 MCP 未提供 maps_geo 或 maps_direction_transit_integrated 工具")
             return None
 
-        # 地理编码：地址 → 经纬度
-        origin_result = await geo_tool.ainvoke({"address": origin})
-        dest_result = await geo_tool.ainvoke({"address": destination})
+        # 调用工具后解析返回的文本内容
+        def _extract_text(raw: list | dict) -> str:
+            if isinstance(raw, dict):
+                return raw.get("text", str(raw))
+            if isinstance(raw, list):
+                texts = []
+                for item in raw:
+                    if isinstance(item, dict):
+                        texts.append(item.get("text", str(item)))
+                    else:
+                        texts.append(str(item))
+                return "\n".join(texts)
+            return str(raw)
 
-        origin_geos = origin_result.get("geocodes", [])
-        dest_geos = dest_result.get("geocodes", [])
+        # 地理编码：地址 → 经纬度
+        origin_result = await geo_tool.ainvoke({"address": origin, "city": ""})
+        dest_result = await geo_tool.ainvoke({"address": destination, "city": ""})
+
+        origin_text = _extract_text(origin_result)
+        dest_text = _extract_text(dest_result)
+
+        origin_data = json.loads(origin_text)
+        dest_data = json.loads(dest_text)
+
+        origin_geos = origin_data.get("results", []) if isinstance(origin_data, dict) else []
+        dest_geos = dest_data.get("results", []) if isinstance(dest_data, dict) else []
         if not origin_geos or not dest_geos:
             logger.warning("地址地理编码失败: %s → %s", origin, destination)
             return None
@@ -57,23 +78,22 @@ async def _get_single_commute(
                 "destination": dest_loc,
                 "city": "",
                 "cityd": "",
-                "strategy": 0,  # 最快路线
             }
         )
+        route_text = _extract_text(route_result)
+        route_data = json.loads(route_text)
 
-        transits = route_result.get("route", {}).get("transits", [])
+        transits = route_data.get("transits", []) if isinstance(route_data, dict) else []
         if not transits:
             logger.warning("未找到公交路线: %s → %s", origin, destination)
             return None
 
-        duration_seconds = transits[0].get("duration", 0)
-        return max(1, int(duration_seconds // 60))
+        duration_seconds = int(transits[0].get("duration", 0))
+        return max(1, duration_seconds // 60)
 
     except Exception as e:
         logger.warning("高德 MCP 查询失败 (%s → %s): %s", origin, destination, e)
         return None
-    finally:
-        await client.aclose()
 
 
 async def batch_get_commute_minutes(

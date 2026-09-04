@@ -179,6 +179,25 @@ def run_interactive(top: int = 5, model: str | None = None) -> None:
         refresh = _prompt("是否重新输入老师档案？(y/N):", "n")
         if refresh.lower() != "y" and refresh.lower() != "yes":
             profile = cached_profile
+            # 如果缓存档案缺少起点地址，单独询问补充
+            if not profile.home_address:
+                addr = _prompt("起点地址（如: 深圳坪山区XX路XX号）:", "深圳坪山区")
+                if addr:
+                    profile = TutorProfile.from_dict(
+                        {
+                            "name": profile.name,
+                            "subjects": sorted(profile.subjects),
+                            "districts": sorted(profile.districts),
+                            "min_hourly_rate": profile.min_hourly_rate,
+                            "max_commute_minutes": profile.max_commute_minutes,
+                            "available_days": sorted(profile.available_days),
+                            "teaching_modes": sorted(profile.teaching_modes),
+                            "preferred_grades": sorted(profile.preferred_grades),
+                            "blocked_keywords": sorted(profile.blocked_keywords),
+                            "home_address": addr,
+                        }
+                    )
+                    save_profile_cache(profile)
         else:
             profile = collect_profile()
     else:

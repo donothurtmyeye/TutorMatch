@@ -69,6 +69,7 @@ def fetch_commute_times(state: ScreeningState) -> ScreeningState:
 
     if not profile.home_address:
         logger.info("老师档案未设置起点地址，跳过 MCP 通勤查询")
+        print("（未设置起点地址，使用估算通勤时间）")
         return state
 
     # 收集需要查询的地址对
@@ -82,6 +83,7 @@ def fetch_commute_times(state: ScreeningState) -> ScreeningState:
 
     if not pairs or all(not p[0] or not p[1] for p in pairs):
         logger.info("所有机会均无有效地址，跳过 MCP 通勤查询")
+        print("（所有机会均无有效地址，使用估算通勤时间）")
         return state
 
     print(f"\n正在查询 {len(pairs)} 个机会的真实通勤时间...")

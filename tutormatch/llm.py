@@ -92,20 +92,22 @@ def parse_opportunities_from_text(
     for i, raw in enumerate(items):
         if not isinstance(raw, dict):
             continue
+        raw_hourly = raw.get("hourly_rate")
+        raw_commute = raw.get("commute_minutes")
         opp = TutoringOpportunity.from_dict(
             {
-                "id": str(raw.get("id", f"opp-{i + 1:03d}")),
-                "title": str(raw.get("title", f"机会 {i + 1}")),
-                "subject": str(raw.get("subject", "")),
-                "grade": str(raw.get("grade", "")),
-                "district": str(raw.get("district", "")),
-                "hourly_rate": int(raw.get("hourly_rate", 0)),
-                "commute_minutes": int(raw.get("commute_minutes", 30)),
-                "days": raw.get("days", []),
-                "mode": str(raw.get("mode", "线下")),
-                "description": str(raw.get("description", "")),
-                "source": str(raw.get("source", "手动输入")),
-                "full_address": str(raw.get("full_address", "")),
+                "id": str(raw.get("id") or f"opp-{i + 1:03d}"),
+                "title": str(raw.get("title") or f"机会 {i + 1}"),
+                "subject": str(raw.get("subject") or ""),
+                "grade": str(raw.get("grade") or ""),
+                "district": str(raw.get("district") or ""),
+                "hourly_rate": int(raw_hourly) if raw_hourly is not None else 0,
+                "commute_minutes": int(raw_commute) if raw_commute is not None else 30,
+                "days": raw.get("days") or [],
+                "mode": str(raw.get("mode") or "线下"),
+                "description": str(raw.get("description") or ""),
+                "source": str(raw.get("source") or "手动输入"),
+                "full_address": str(raw.get("full_address") or ""),
             }
         )
         opportunities.append(opp)
