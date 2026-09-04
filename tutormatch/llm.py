@@ -26,6 +26,7 @@ PARSE_PROMPT = """你是一个家教兼职机会信息解析器。
 - mode: 授课方式，默认 "线下"
 - description: 合并所有其他信息，包括学员情况、时间安排、老师要求等
 - source: 固定为 "手动输入"
+- full_address: 完整上课地址，从原始文本中的 【上课地址】 提取，保持原样
 
 只输出 JSON 数组，不要输出 Markdown、解释文字或代码块。"""
 
@@ -104,6 +105,7 @@ def parse_opportunities_from_text(
                 "mode": str(raw.get("mode", "线下")),
                 "description": str(raw.get("description", "")),
                 "source": str(raw.get("source", "手动输入")),
+                "full_address": str(raw.get("full_address", "")),
             }
         )
         opportunities.append(opp)
@@ -153,6 +155,7 @@ def _build_screening_prompt(
                     "mode": opportunity.mode,
                     "description": opportunity.description,
                     "source": opportunity.source,
+                    "full_address": opportunity.full_address,
                 }
                 for opportunity in opportunities
             ],

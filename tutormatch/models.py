@@ -15,6 +15,7 @@ class TutorProfile:
     teaching_modes: set[str]
     preferred_grades: set[str] = field(default_factory=set)
     blocked_keywords: set[str] = field(default_factory=set)
+    home_address: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "TutorProfile":
@@ -28,6 +29,7 @@ class TutorProfile:
             teaching_modes=_lower_set(data.get("teaching_modes", [])),
             preferred_grades=_lower_set(data.get("preferred_grades", [])),
             blocked_keywords=_lower_set(data.get("blocked_keywords", [])),
+            home_address=str(data.get("home_address", "")),
         )
 
 
@@ -44,6 +46,7 @@ class TutoringOpportunity:
     mode: str
     description: str
     source: str = "manual"
+    full_address: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "TutoringOpportunity":
@@ -59,6 +62,7 @@ class TutoringOpportunity:
             mode=str(data.get("mode", "")).lower(),
             description=str(data.get("description", "")),
             source=str(data.get("source", "manual")),
+            full_address=str(data.get("full_address", "")),
         )
 
 

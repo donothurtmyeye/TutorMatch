@@ -91,6 +91,7 @@ def save_profile_cache(profile: TutorProfile) -> None:
         "teaching_modes": sorted(profile.teaching_modes),
         "preferred_grades": sorted(profile.preferred_grades),
         "blocked_keywords": sorted(profile.blocked_keywords),
+        "home_address": profile.home_address,
     }
     PROFILE_CACHE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"老师档案已保存到 {PROFILE_CACHE}，下次运行会自动读取。")
@@ -110,6 +111,7 @@ def collect_profile() -> TutorProfile:
     # 最长通勤时间支持中文时间格式（如 两个小时）
     max_commute_input = _prompt("最长通勤时间:", "45分钟")
     max_commute_minutes = _parse_minutes(max_commute_input)
+    home_address = _prompt("起点地址（如: 深圳坪山区XX路XX号）:", "深圳坪山区")
     available_days = _split_input(_prompt("可授课时间 (逗号分隔):", "周二,周四,周六,周日"))
     teaching_modes = _split_input(_prompt("授课方式 (逗号分隔):", "线下,线上"))
     preferred_grades = _split_input(_prompt("期望年级 (逗号分隔):", "初中,高中"))
@@ -125,6 +127,7 @@ def collect_profile() -> TutorProfile:
             "teaching_modes": teaching_modes,
             "preferred_grades": preferred_grades,
             "blocked_keywords": blocked_keywords,
+            "home_address": home_address,
         }
     )
     save_profile_cache(profile)
@@ -170,6 +173,8 @@ def run_interactive(top: int = 5, model: str | None = None) -> None:
         print(f"  科目: {', '.join(sorted(cached_profile.subjects))}")
         print(f"  区域: {', '.join(sorted(cached_profile.districts))}")
         print(f"  最低时薪: {cached_profile.min_hourly_rate}")
+        if cached_profile.home_address:
+            print(f"  起点地址: {cached_profile.home_address}")
         print()
         refresh = _prompt("是否重新输入老师档案？(y/N):", "n")
         if refresh.lower() != "y" and refresh.lower() != "yes":
