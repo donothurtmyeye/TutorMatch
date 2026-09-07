@@ -97,11 +97,3 @@ LangGraph 编排 3 个节点：
 1. `fetch_commute_times`：高德 MCP 查询公共交通通勤时间，更新每个机会的 `commute_minutes`。
 2. `screen_with_llm`：调用大模型完成筛选、评分、风险判断和话术生成。
 3. `write_report`：生成 Markdown 报告和终端摘要。
-
-## 测试
-
-测试不会真实请求大模型，会使用模拟模型输出：
-
-```powershell
-uv run python -m unittest discover -s tests
-```
