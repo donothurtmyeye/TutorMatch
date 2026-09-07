@@ -1,27 +1,30 @@
 # TutorMatch
 
-家教兼职机会筛选 Agent MVP1。项目使用 LangGraph 编排流程，并通过 LangChain 的 `init_chat_model` 调用 OpenAI-compatible 大模型，对家教兼职机会进行评分、排序、风险判断和话术生成。
+家教兼职机会筛选 Agent MVP1。项目使用 LangGraph 编排流程，通过 LangChain 的 `init_chat_model` 调用大模型，对家教兼职机会进行评分、排序、风险判断和话术生成。通勤时间通过高德地图 MCP 服务实时查询公共交通路线，替代人工估算。
 
 ## 功能
 
-- 终端交互式输入老师偏好档案：科目、区域、最低课酬、通勤上限、可上课时间、授课方式、年级偏好和风险关键词。
-- **批量粘贴**：直接从微信群、中介等渠道复制整块机会文本，AI 自动解析并结构化。
-- 老师档案持久化存储，首次输入后自动保存，下次运行自动读取。
-- 调用大模型完成机会筛选：评分、结论、匹配理由、风险提醒、建议追问和联系话术。
-- 生成 Markdown 筛选报告。
+- **Streamlit Web 前端**：图形化界面，粘贴大量机会文本一键筛选。
+- **批量粘贴**：从微信群、中介等渠道复制整块机会文本，AI 自动解析结构化。
+- **高德地图 MCP 通勤查询**：自动获取老师起点到每个机会地址的公共交通通勤时间，替代人工估算。
+- **老师档案持久化**：首次输入后自动保存 `profile.json`，下次运行自动读取。
+- **大模型筛选**：评分、结论、匹配理由、风险提醒、建议追问和联系话术。
+- **Markdown 筛选报告**：生成完整报告，支持查看详细分析。
 
 ## 项目结构
 
 ```text
 TutorMatch/
-  main.py                    # 统一运行入口
+  main.py                    # 终端入口（备用）
+  app.py                    # Streamlit Web 前端（推荐入口）
   tutormatch/
-    agent.py                 # LangGraph Agent 编排
-    llm.py                   # 大模型调用和结果解析
-    config.py                # .env 配置读取
-    models.py                # 数据模型
-    interactive.py           # 终端交互输入
-    report.py                # 报告渲染
+    agent.py                # LangGraph 编排流程
+    amap_mcp.py             # 高德地图 MCP 客户端（地理编码 + 公交路线规划）
+    llm.py                  # 大模型调用和结果解析
+    config.py               # .env 配置读取
+    models.py               # 数据模型
+    interactive.py          # 终端交互输入
+    report.py               # 报告渲染
   tests/
     test_config.py
     test_llm.py
@@ -35,107 +38,65 @@ TutorMatch/
 uv sync
 ```
 
-## 配置大模型
+## 配置
 
-在项目根目录创建 `.env` 文件。你可以使用通用字段：
+在项目根目录创建 `.env` 文件：
 
 ```text
+# 大模型配置（通用字段，自动映射到 OPENAI_ 等 provider 环境变量）
 API_KEY="你的 API Key"
 BASE_URL="https://your-compatible-endpoint/v1"
 MODEL="openai:你的模型名"
+
+# 高德地图 MCP 配置
+AMAP_MCP_URL=https://mcp.amap.com/mcp?key=你的高德APIKey
 ```
 
-也可以使用 OpenAI 标准字段：
+**大模型**：`init_chat_model` 要求模型名格式为 `provider:model-name`，如 `openai:gpt-4o-mini`、`openai:qwen3.7-max-2026-06-08`。程序启动时自动把通用 `API_KEY`/`BASE_URL` 复制到对应 provider 的环境变量，LangChain 直接读取。
 
-```text
-OPENAI_API_KEY="你的 API Key"
-OPENAI_BASE_URL="https://your-compatible-endpoint/v1"
-TUTORMATCH_MODEL="openai:你的模型名"
-```
-
-程序启动时会自动读取 `.env`，并把 `API_KEY`、`BASE_URL` 映射给 LangChain/OpenAI 客户端。
+**高德地图**：需要在高德开放平台申请 API Key，在 `.env` 中配置 `AMAP_MCP_URL`。不配置则跳过通勤时间查询，使用原始机会数据中的通勤时间。
 
 ## 运行
 
-统一入口，启动后按终端提示输入老师档案和家教机会即可：
+### Web 前端（推荐）
+
+```powershell
+.venv\Scripts\streamlit.exe run app.py
+```
+
+浏览器打开 `http://localhost:8501`，界面引导式操作：填写老师档案 → 粘贴机会文本 → 点击筛选 → 查看结果卡片。
+
+### 终端交互（备用）
 
 ```powershell
 uv run python main.py
 ```
 
-**老师档案持久化**：首次运行会要求输入老师档案，输入后自动保存到 `profile.json`。下次运行自动读取，按需确认是否重新输入。
+按提示输入老师档案，然后粘贴机会文本，输入 `---end---` 结束。
 
-**机会批量粘贴**：直接把所有机会文本一次性粘贴进去，完成后输入 `---end---` 结束：
-
-```text
-===== TutorMatch 交互式筛选 =====
-已读取缓存的老师档案：候选老师
-  科目: 数学, 英语, 物理
-  区域: 徐汇, 静安, 黄浦, 线上
-  最低时薪: 180
-
-是否重新输入老师档案？(y/N):
-
-===== 批量粘贴家教机会 =====
-请粘贴所有机会文本，粘贴完成后在新行输入 ---end--- 结束：
-==================================================
-深圳F090328A
-【上课地址】：龙岗区联发天境雅居
-【年级科目】：二年级全科
-【学员情况】：两个男孩，一对二
-【时间安排】：周一周三晚，一周2次，一次2小时，具体老师带时间协商
-【老师要求】：有经验，有耐心
-【老师课费】：100-130/h
-
-深圳F090334A
-【上课地址】：南山区英达钰龙园D栋
-【年级科目】：五年级全科
-【学员情况】：女孩
-【时间安排】：一周4次，一次2小时，晚上七点之后上课，具体老师带时间协商
-【老师要求】：有经验，有耐心
-【老师课费】：90-110/h
----end---
-```
-
-AI 会自动解析出结构化信息，然后进入筛选流程。
-
-临时指定模型：
-
-```powershell
-uv run python main.py --model openai:你的模型名
-```
-
-指定展示前 N 个结果：
-
-```powershell
-uv run python main.py --top 10
-```
-
-运行后会生成报告：
+## 筛选流程
 
 ```text
-reports/screening_report.md
+用户粘贴机会文本
+       ↓
+AI 解析 → 结构化 TutoringOpportunity
+       ↓
+高德 MCP 查询通勤时间
+  ├─ maps_geo（地址 → 经纬度）
+  └─ maps_direction_transit_integrated（公交路线 → 时长）
+       ↓
+LLM 评分排序（匹配度、风险、话术）
+       ↓
+生成 Markdown 报告 + 终端摘要
 ```
 
-## Agent 流程
+## Agent 节点
 
-LangGraph 目前包含 2 个节点：
+LangGraph 编排 3 个节点：
 
-1. `screen_with_llm`：调用大模型完成筛选、评分和话术生成。
-2. `write_report`：生成 Markdown 报告和终端摘要。
-
-大模型初始化位置在 `tutormatch/llm.py`：
-
-```python
-from langchain.chat_models import init_chat_model
-
-model = init_chat_model(
-    model_name,
-    api_key=api_key,
-    base_url=base_url,
-    temperature=0,
-)
-```
+1. `fetch_commute_times`：高德 MCP 查询公共交通通勤时间，更新每个机会的 `commute_minutes`。
+2. `screen_with_llm`：调用大模型完成筛选、评分、风险判断和话术生成。
+3. `write_report`：生成 Markdown 报告和终端摘要。
 
 ## 测试
 

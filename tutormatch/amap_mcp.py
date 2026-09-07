@@ -110,6 +110,9 @@ async def batch_get_commute_minutes(
         与输入等长的列表，每个元素为分钟数或 None（查询失败）
     """
     url = mcp_url or get_amap_mcp_url()
+    if not url:
+        logger.warning("AMAP_MCP_URL 未配置，跳过通勤时间查询")
+        return [None] * len(pairs)
     results: list[int | None] = []
     for origin, dest in pairs:
         if not origin or not dest:

@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 
 DEFAULT_MODEL = "openai:gpt-4o-mini"
-DEFAULT_AMAP_MCP_URL = "https://mcp.amap.com/mcp?key=2827d5aee0d124c3bde75853db4b6d5a"
 
 
 def load_runtime_config(env_path: str | Path = ".env") -> None:
@@ -31,5 +30,5 @@ def get_default_model() -> str:
     )
 
 
-def get_amap_mcp_url() -> str:
-    return os.getenv("AMAP_MCP_URL") or DEFAULT_AMAP_MCP_URL
+def get_amap_mcp_url() -> str | None:
+    return os.getenv("AMAP_MCP_URL") or None
