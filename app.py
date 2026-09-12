@@ -126,7 +126,7 @@ opportunities_text = st.text_area(
     "将家教机会文本粘贴到下方",
     value=st.session_state.opportunities_text,
     height=300,
-    placeholder="示例：\n深圳F090328A\n【上课地址】：龙岗区XXXX\n【年级科目】：二年级全科\n【老师课费】：100-130/h\n\n粘贴完成后，继续输入 ---end--- 结束，然后点击「开始筛选」",
+    placeholder="示例：\n深圳F090328A\n【上课地址】：龙岗区XXXX\n【年级科目】：二年级全科\n【老师课费】：100-130/h\n\n把全部机会文本粘贴进来即可，然后点击下方的「开始筛选」",
     label_visibility="collapsed",
 )
 
@@ -171,7 +171,7 @@ if st.session_state.processing:
     if not profile:
         st.error("❌ 请先在侧边栏填写老师档案")
         st.session_state.processing = False
-        st.rerun()
+        st.stop()
 
     # 用 status 容器显示进度
     status = st.status("准备中...", expanded=True)
@@ -186,12 +186,7 @@ if st.session_state.processing:
         progress_bar.progress(0.25, text=f"解析完成，识别到 {len(opportunities)} 个机会")
 
         if not opportunities:
-            status.update(
-                label="⚠️ 未识别到任何机会，请检查输入文本",
-                state="error",
-            )
-            st.session_state.processing = False
-            st.rerun()
+            raise ValueError("未识别到任何机会，请检查输入文本格式")
 
         st.session_state.parsed_opportunities = opportunities
         status.write(f"✅ 识别到 {len(opportunities)} 个机会")
@@ -217,11 +212,10 @@ if st.session_state.processing:
         status.update(label="✅ 筛选完成！", state="complete", expanded=False)
 
     except Exception as e:
-        status.update(label=f"❌ 筛选过程出错: {e}", state="error")
+        status.update(label="❌ 筛选过程出错", state="error")
         st.exception(e)
     finally:
         st.session_state.processing = False
-        st.rerun()
 
 # ============================================================
 # 显示结果
